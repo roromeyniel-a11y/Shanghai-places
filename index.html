@@ -150,7 +150,6 @@
     <!-- HOME -->
     <div id="screen-home" class="screen active">
       <div class="header">
-        <button class="icon-btn" id="settings-btn">⚙</button>
         <div style="flex:1;min-width:0">
           <button id="csw-btn" onclick="openCityPicker()">
             <span id="csw-e" style="font-size:18px;line-height:1;flex-shrink:0">🏙</span>
@@ -778,9 +777,9 @@ window.openDet=function(id){
     +'<button id="da-vis" onclick="togVis(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid;color:'+(p.visited?'#6B8C6E':'var(--stone)')+';background:'+(p.visited?'rgba(107,140,110,.1)':'white')+';border-color:'+(p.visited?'rgba(107,140,110,.4)':'var(--border-s)')+'">'+( p.visited?'✓ Visited':'○ Mark visited')+'</button>'
     +'<button onclick="closeSh(\'det-sh\',\'det-ov\');setTimeout(function(){openForm(\''+p.id+'\');},100)" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid var(--border-s);background:white;color:var(--stone)">✎ Edit</button>'
     +'</div>'
+    +(p.notes?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Notes</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.7;background:var(--cream);padding:14px;border-radius:12px;border-left:3px solid '+cat.color+'50">'+p.notes+'</div></div>':'')
     +(p.address?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Address</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.5">'+p.address+'</div></div>':'')
     +(p.mapLink?'<div style="margin-bottom:16px"><a href="'+p.mapLink+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:rgba(74,123,140,.08);border:1px solid rgba(74,123,140,.2);color:#4A7B8C;font-size:13px;font-weight:500;text-decoration:none;font-family:var(--mono)">◎ Open in maps app</a></div>':'')
-    +(p.notes?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Notes</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.7;background:var(--cream);padding:14px;border-radius:12px;border-left:3px solid '+cat.color+'50">'+p.notes+'</div></div>':'')
     +outH
     +(p.source?'<div style="margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--cream);border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--stone)">Discovered via · '+p.source+'</div>':'')
     +'<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Photos</div><div id="det-photos-'+p.id+'" style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px"></div></div>'
@@ -987,7 +986,6 @@ function switchTab(tab){
 document.querySelectorAll('.nav-btn[data-tab]').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab);});});
 document.getElementById('nav-add').addEventListener('click',function(){openForm(null);});
 document.getElementById('add-btn-h').addEventListener('click',function(){openForm(null);});
-document.getElementById('settings-btn').addEventListener('click',function(){
   var places=P();
   document.getElementById('set-stats').innerHTML=[{l:'Total',v:places.length},{l:'Visited',v:places.filter(function(p){return p.visited;}).length},{l:'Favorites',v:places.filter(function(p){return p.favorite;}).length}].map(function(s){return'<div class="stat-card"><div class="stat-num">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';}).join('');
   openSh('set-sh','set-ov');
@@ -1071,45 +1069,28 @@ document.getElementById('imp-inp').addEventListener('change',function(e){
 });
 
 // ── PHOTOS ─────────────────────────────────────────────────────────────────
-// ── PHOTOS : IndexedDB local storage (sans Firebase requis) ─────────────────
-var photoDB=null;
-function openPhotoDB(cb){
-  if(photoDB){cb(photoDB);return;}
-  var req=indexedDB.open('myplaces_photos',1);
-  req.onupgradeneeded=function(e){e.target.result.createObjectStore('photos',{keyPath:'id'});};
-  req.onsuccess=function(e){photoDB=e.target.result;cb(photoDB);};
-  req.onerror=function(){cb(null);};
+// ── PHOTOS : localStorage (compatible PWA iOS standalone) ───────────────────
+// Stocke les images en base64 dans localStorage — fonctionne dans tous les contextes iOS
+function lsSavePhoto(key,dataUrl){
+  try{localStorage.setItem(key,dataUrl);}catch(e){console.warn('Photo storage full',e);}
 }
-function idbSavePhoto(key,dataUrl,cb){
-  openPhotoDB(function(db){
-    if(!db){cb&&cb();return;}
-    var tx=db.transaction('photos','readwrite');
-    tx.objectStore('photos').put({id:key,url:dataUrl});
-    tx.oncomplete=function(){cb&&cb();};
-  });
+function lsGetPhotos(prefix){
+  var results=[];
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.startsWith(prefix)){results.push({path:k,url:localStorage.getItem(k)});}
+    }
+  }catch(e){}
+  return results;
 }
-function idbGetPhotos(prefix,cb){
-  openPhotoDB(function(db){
-    if(!db){cb([]);return;}
-    var results=[];
-    var tx=db.transaction('photos','readonly');
-    var req=tx.objectStore('photos').openCursor();
-    req.onsuccess=function(e){
-      var cursor=e.target.result;
-      if(cursor){if(cursor.key.startsWith(prefix))results.push({path:cursor.key,url:cursor.value.url});cursor.continue();}
-      else cb(results);
-    };
-    req.onerror=function(){cb([]);};
-  });
+function lsDeletePhoto(key){
+  try{localStorage.removeItem(key);}catch(e){}
 }
-function idbDeletePhoto(key,cb){
-  openPhotoDB(function(db){
-    if(!db){cb&&cb();return;}
-    var tx=db.transaction('photos','readwrite');
-    tx.objectStore('photos').delete(key);
-    tx.oncomplete=function(){cb&&cb();};
-  });
-}
+// Aliases pour compatibilité avec le reste du code
+function idbSavePhoto(key,dataUrl,cb){lsSavePhoto(key,dataUrl);cb&&cb();}
+function idbGetPhotos(prefix,cb){cb(lsGetPhotos(prefix));}
+function idbDeletePhoto(key,cb){lsDeletePhoto(key);cb&&cb();}
 var photoCache={};
 function compressImage(file,maxPx,quality,cb){
   var reader=new FileReader();
