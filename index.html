@@ -1145,11 +1145,9 @@ function loadPhotosForDet(placeId){
   wrap.innerHTML='<div style="width:88px;height:88px;border-radius:12px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div></div>';
   var prefix='photo_'+activeCityId+'_'+placeId+'_';
   idbGetPhotos(prefix,function(localPhotos){
-    if(localPhotos.length>0||!window._fb){
-      photoCache[placeId]=localPhotos;renderPhotoSection(placeId);
-    }else{
-      window._fb.listPhotos(activeCityId,placeId).then(function(photos){photoCache[placeId]=photos;renderPhotoSection(placeId);});
-    }
+    // Toujours afficher les photos locales immédiatement, sans attendre Firebase
+    photoCache[placeId]=localPhotos;
+    renderPhotoSection(placeId);
   });
 }
 window.uploadPhoto=function(placeId,file,triggerEl){
