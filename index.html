@@ -992,18 +992,8 @@ function switchTab(tab){
 document.querySelectorAll('.nav-btn[data-tab]').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab);});});
 document.getElementById('nav-add').addEventListener('click',function(){openForm(null);});
 document.getElementById('add-btn-h').addEventListener('click',function(){openForm(null);});
-document.getElementById('settings-btn').addEventListener('click',function(){
-  var places=P();
-  document.getElementById('set-stats').innerHTML=[
-    {l:'Total',v:places.length},
-    {l:'Visited',v:places.filter(function(p){return p.visited;}).length},
-    {l:'Favorites',v:places.filter(function(p){return p.favorite;}).length}
-  ].map(function(s){
-    return'<div class="stat-card"><div class="stat-num">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';
-  }).join('');
   openSh('set-sh','set-ov');
 });
-
 document.getElementById('search-toggle').addEventListener('click',function(){
   var w=document.getElementById('search-bar-wrap'),open=w.style.display==='flex';
   if(open){w.style.display='none';searchVal='';document.getElementById('search-inp').value='';renderHome();}
