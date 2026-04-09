@@ -41,7 +41,7 @@
     .screen{display:none;height:100%;flex-direction:column;overflow:hidden}
     .screen.active{display:flex}
     .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-    #nav{background:rgba(247,244,239,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);padding-top:8px;padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(5,1fr);height:auto;flex-shrink:0;z-index:30}
+    #nav{background:rgba(247,244,239,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);padding-top:8px;padding-bottom:max(env(safe-area-inset-bottom,16px),16px);display:grid;grid-template-columns:repeat(5,1fr);height:auto;flex-shrink:0;z-index:30}
     .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 0}
     .nav-icon{font-size:20px;line-height:1;color:var(--stone-light);transition:color .2s}
     .nav-label{font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--stone-light);transition:color .2s}
@@ -150,6 +150,7 @@
     <!-- HOME -->
     <div id="screen-home" class="screen active">
       <div class="header">
+        <button class="icon-btn" id="settings-btn">⚙</button>
         <div style="flex:1;min-width:0">
           <button id="csw-btn" onclick="openCityPicker()">
             <span id="csw-e" style="font-size:18px;line-height:1;flex-shrink:0">🏙</span>
@@ -761,34 +762,28 @@ window.openDet=function(id){
   var sub=getSubcat(p.subcat),subL=sub?' · '+sub.label:'';
   var outH=p.outings&&p.outings.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Good for</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+p.outings.map(function(o){return'<span style="font-size:11px;font-family:var(--mono);color:var(--ink-soft);background:white;border:1px solid var(--border-s);border-radius:8px;padding:4px 10px">'+o+'</span>';}).join('')+'</div></div>':'';
   document.getElementById('det-content').innerHTML=
-    '<div id="det-photos-'+p.id+'" style="position:relative"></div>'
-    +'<div style="background:linear-gradient(135deg,'+cat.color+'18 0%,'+cat.color+'05 100%);padding:20px 20px 14px;position:relative">'
-    +'<button class="close-btn" onclick="closeSh(\'det-sh\',\'det-ov\')" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);box-shadow:var(--sh-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;z-index:2">×</button>'
-    +'<div style="display:flex;gap:14px;align-items:center">'
-    +'<div style="width:52px;height:52px;border-radius:14px;background:'+cat.color+'20;border:2px solid '+cat.color+'30;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+em+'</div>'
-    +'<div style="flex:1;min-width:0">'
-    +'<div style="font-size:21px;font-family:var(--serif);font-weight:500;line-height:1.2;letter-spacing:-.3px;padding-right:36px">'+p.name+'</div>'
-    +'<div style="display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap">'
-    +'<span style="font-size:10px;color:'+cat.color+';font-weight:700;background:'+cat.color+'15;border-radius:5px;padding:2px 8px;font-family:var(--mono)">'+cat.label+subL+'</span>'
-    +'<span style="font-size:10px;color:var(--stone);font-family:var(--mono)">'+p.district+'</span>'
-    +'<span style="font-size:10px;color:'+pri.color+';font-weight:700;font-family:var(--mono)">'+pri.label.toUpperCase()+'</span>'
+    '<div style="background:linear-gradient(135deg,'+cat.color+'18 0%,'+cat.color+'08 100%);padding:28px 24px 24px;border-bottom:1px solid var(--border);position:relative">'
+    +'<button class="close-btn" onclick="closeSh(\'det-sh\',\'det-ov\')" style="position:absolute;top:20px;right:20px;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.8);backdrop-filter:blur(8px);box-shadow:var(--sh-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">×</button>'
+    +'<div style="display:flex;gap:16px;align-items:flex-start">'
+    +'<div style="width:60px;height:60px;border-radius:16px;background:'+cat.color+'20;border:2px solid '+cat.color+'30;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">'+em+'</div>'
+    +'<div style="flex:1"><div style="font-size:24px;font-family:var(--serif);font-weight:500;line-height:1.2;letter-spacing:-.3px">'+p.name+'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+    +'<span style="font-size:11px;color:'+cat.color+';font-weight:600;background:'+cat.color+'15;border-radius:6px;padding:3px 9px;font-family:var(--mono)">'+cat.label+subL+'</span>'
+    +'<span style="font-size:11px;color:var(--stone);font-family:var(--mono)">📍 '+p.district+'</span>'
+    +'<span style="font-size:11px;color:'+pri.color+';font-weight:600;font-family:var(--mono)">● '+pri.label+'</span>'
     +'</div></div></div></div>'
-    +'<div style="display:flex;gap:7px;padding:10px 20px 12px;border-bottom:1px solid var(--border)">'
-    +'<button id="da-fav" onclick="togFav(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 4px;border-radius:11px;font-size:11px;font-family:var(--mono);text-align:center;border:1.5px solid;color:'+(p.favorite?'#C9A96E':'var(--stone)')+';background:'+(p.favorite?'rgba(201,169,110,.08)':'white')+';border-color:'+(p.favorite?'rgba(201,169,110,.5)':'var(--border-s)')+'">'+( p.favorite?'★ Fav':'☆ Fav')+'</button>'
-    +'<button id="da-vis" onclick="togVis(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 4px;border-radius:11px;font-size:11px;font-family:var(--mono);text-align:center;border:1.5px solid;color:'+(p.visited?'#6B8C6E':'var(--stone)')+';background:'+(p.visited?'rgba(107,140,110,.08)':'white')+';border-color:'+(p.visited?'rgba(107,140,110,.5)':'var(--border-s)')+'">'+( p.visited?'✓ Visité':'○ À faire')+'</button>'
-    +(p.mapLink?'<a href="'+p.mapLink+'" target="_blank" style="flex:1;padding:10px 4px;border-radius:11px;font-size:11px;font-family:var(--mono);text-align:center;border:1.5px solid rgba(74,123,140,.3);color:#4A7B8C;background:rgba(74,123,140,.06);text-decoration:none;display:flex;align-items:center;justify-content:center">◎ Maps</a>':'<span style="flex:1"></span>')
-    +'<button onclick="closeSh(\'det-sh\',\'det-ov\');setTimeout(function(){openForm(\''+p.id+'\');},100)" style="flex:1;padding:10px 4px;border-radius:11px;font-size:11px;font-family:var(--mono);text-align:center;border:1.5px solid var(--border-s);background:white;color:var(--stone)">✎ Edit</button>'
+    +'<div class="sheet-body">'
+    +'<div style="display:flex;gap:8px;margin-bottom:20px">'
+    +'<button id="da-fav" onclick="togFav(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid;color:'+(p.favorite?'#C9A96E':'var(--stone)')+';background:'+(p.favorite?'rgba(201,169,110,.1)':'white')+';border-color:'+(p.favorite?'rgba(201,169,110,.4)':'var(--border-s)')+'">'+( p.favorite?'★ Favorited':'☆ Favorite')+'</button>'
+    +'<button id="da-vis" onclick="togVis(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid;color:'+(p.visited?'#6B8C6E':'var(--stone)')+';background:'+(p.visited?'rgba(107,140,110,.1)':'white')+';border-color:'+(p.visited?'rgba(107,140,110,.4)':'var(--border-s)')+'">'+( p.visited?'✓ Visited':'○ Mark visited')+'</button>'
+    +'<button onclick="closeSh(\'det-sh\',\'det-ov\');setTimeout(function(){openForm(\''+p.id+'\');},100)" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid var(--border-s);background:white;color:var(--stone)">✎ Edit</button>'
     +'</div>'
-    +'<div style="padding:16px 20px">'
-    +(p.notes?'<div style="margin-bottom:16px;font-size:14px;color:var(--ink-soft);line-height:1.75;padding:14px 16px;background:var(--cream);border-radius:14px;border-left:3px solid '+cat.color+'55">'+p.notes+'</div>':'')
+    +(p.address?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Address</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.5">'+p.address+'</div></div>':'')
+    +(p.mapLink?'<div style="margin-bottom:16px"><a href="'+p.mapLink+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:rgba(74,123,140,.08);border:1px solid rgba(74,123,140,.2);color:#4A7B8C;font-size:13px;font-weight:500;text-decoration:none;font-family:var(--mono)">◎ Open in maps app</a></div>':'')
+    +(p.notes?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Notes</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.7;background:var(--cream);padding:14px;border-radius:12px;border-left:3px solid '+cat.color+'50">'+p.notes+'</div></div>':'')
     +outH
-    +(p.address?'<div style="margin-bottom:10px;font-size:12px;color:var(--stone);font-family:var(--mono);display:flex;align-items:flex-start;gap:6px"><span>📍</span><span>'+p.address+'</span></div>':'')
-    +(p.mapLink?'<div style="margin-bottom:14px"><a href="'+p.mapLink+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:rgba(74,123,140,.08);border:1px solid rgba(74,123,140,.2);color:#4A7B8C;font-size:13px;font-weight:500;text-decoration:none;font-family:var(--mono)">◎ Open in maps app</a></div>':'')
-    +(p.source?'<div style="margin-bottom:14px;font-size:11px;color:var(--stone-light);font-family:var(--mono)">via '+p.source+'</div>':'')
-    +'<div style="margin-top:8px">'
-    +'<div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Photos</div>'
-    +'<div id="det-photos-'+p.id+'" style="display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:40px"></div>'
-    +'</div>'
+    +(p.source?'<div style="margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--cream);border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--stone)">Discovered via · '+p.source+'</div>':'')
+    +'<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Photos</div><div id="det-photos-'+p.id+'" style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px"></div></div>'
     +'</div>';
   openSh('det-sh','det-ov');
   setTimeout(function(){loadPhotosForDet(p.id);},100);
@@ -992,6 +987,9 @@ function switchTab(tab){
 document.querySelectorAll('.nav-btn[data-tab]').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab);});});
 document.getElementById('nav-add').addEventListener('click',function(){openForm(null);});
 document.getElementById('add-btn-h').addEventListener('click',function(){openForm(null);});
+document.getElementById('settings-btn').addEventListener('click',function(){
+  var places=P();
+  document.getElementById('set-stats').innerHTML=[{l:'Total',v:places.length},{l:'Visited',v:places.filter(function(p){return p.visited;}).length},{l:'Favorites',v:places.filter(function(p){return p.favorite;}).length}].map(function(s){return'<div class="stat-card"><div class="stat-num">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';}).join('');
   openSh('set-sh','set-ov');
 });
 document.getElementById('search-toggle').addEventListener('click',function(){
@@ -1073,10 +1071,45 @@ document.getElementById('imp-inp').addEventListener('change',function(e){
 });
 
 // ── PHOTOS ─────────────────────────────────────────────────────────────────
-// Photos: localStorage (works in PWA standalone on iOS)
-function lsSavePhoto(k,v){try{localStorage.setItem(k,v);}catch(e){}}
-function lsGetPhotos(prefix){var r=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith(prefix))r.push({path:k,url:localStorage.getItem(k)});}}catch(e){}return r;}
-function lsDelPhoto(k){try{localStorage.removeItem(k);}catch(e){}}
+// ── PHOTOS : IndexedDB local storage (sans Firebase requis) ─────────────────
+var photoDB=null;
+function openPhotoDB(cb){
+  if(photoDB){cb(photoDB);return;}
+  var req=indexedDB.open('myplaces_photos',1);
+  req.onupgradeneeded=function(e){e.target.result.createObjectStore('photos',{keyPath:'id'});};
+  req.onsuccess=function(e){photoDB=e.target.result;cb(photoDB);};
+  req.onerror=function(){cb(null);};
+}
+function idbSavePhoto(key,dataUrl,cb){
+  openPhotoDB(function(db){
+    if(!db){cb&&cb();return;}
+    var tx=db.transaction('photos','readwrite');
+    tx.objectStore('photos').put({id:key,url:dataUrl});
+    tx.oncomplete=function(){cb&&cb();};
+  });
+}
+function idbGetPhotos(prefix,cb){
+  openPhotoDB(function(db){
+    if(!db){cb([]);return;}
+    var results=[];
+    var tx=db.transaction('photos','readonly');
+    var req=tx.objectStore('photos').openCursor();
+    req.onsuccess=function(e){
+      var cursor=e.target.result;
+      if(cursor){if(cursor.key.startsWith(prefix))results.push({path:cursor.key,url:cursor.value.url});cursor.continue();}
+      else cb(results);
+    };
+    req.onerror=function(){cb([]);};
+  });
+}
+function idbDeletePhoto(key,cb){
+  openPhotoDB(function(db){
+    if(!db){cb&&cb();return;}
+    var tx=db.transaction('photos','readwrite');
+    tx.objectStore('photos').delete(key);
+    tx.oncomplete=function(){cb&&cb();};
+  });
+}
 var photoCache={};
 function compressImage(file,maxPx,quality,cb){
   var reader=new FileReader();
@@ -1093,62 +1126,102 @@ function compressImage(file,maxPx,quality,cb){
 function renderPhotoSection(placeId){
   var wrap=document.getElementById('det-photos-'+placeId);if(!wrap)return;
   var photos=photoCache[placeId]||[];wrap.innerHTML='';
-  if(photos.length===0){
-    wrap.style.cssText='min-height:4px';
-  }else{
-    wrap.style.cssText='display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;background:#111';
-    photos.forEach(function(ph){
-      var t=document.createElement('div');
-      t.style.cssText='position:relative;flex-shrink:0;width:'+(photos.length===1?'100%':'75vw');
-      var img=document.createElement('img');
-      img.src=ph.url;
-      img.style.cssText='width:100%;height:200px;object-fit:cover;display:block;cursor:pointer';
-      img.onclick=function(){openLb(ph.url);};
-      t.appendChild(img);
-      var del=document.createElement('button');
-      del.innerHTML='×';
-      del.style.cssText='position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);color:white;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.3)';
-      del.onclick=function(e){e.stopPropagation();delPhoto(placeId,ph.path);};
-      t.appendChild(del);
-      wrap.appendChild(t);
-    });
-  }
-  // Add button - always show below photos in the fixed slot
-  var addEl=document.getElementById('det-photos-add-'+placeId);
-  if(!addEl){addEl=document.createElement('div');addEl.id='det-photos-add-'+placeId;wrap.parentNode.insertBefore(addEl,wrap.nextSibling);}
-  addEl.innerHTML='';
+  photos.forEach(function(ph){
+    var t=document.createElement('div');t.style.cssText='position:relative;flex-shrink:0';
+    var img=document.createElement('img');img.src=ph.url;img.style.cssText='width:88px;height:88px;border-radius:12px;object-fit:cover;cursor:pointer;border:1px solid var(--border);display:block';img.onclick=function(){openLb(ph.url);};t.appendChild(img);
+    var del=document.createElement('button');del.innerHTML='\xd7';del.style.cssText='position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(26,23,20,.65);color:white;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';del.onclick=function(e){e.stopPropagation();delPhoto(placeId,ph.path);};t.appendChild(del);
+    wrap.appendChild(t);
+  });
   if(photos.length<6){
-    var label=document.createElement('label');
-    label.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1.5px dashed var(--border-s);background:var(--cream);cursor:pointer;color:var(--stone);font-size:13px;font-family:var(--mono);margin-top:10px';
-    label.innerHTML='<span style="font-size:18px">📷</span><span>Ajouter une photo</span><span style="margin-left:auto;font-size:10px;opacity:.5">'+photos.length+'/6</span>';
-    var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';
+    var label=document.createElement('label');label.style.cssText='width:88px;height:88px;border-radius:12px;border:1.5px dashed var(--border-s);background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;color:var(--stone);font-size:11px;font-family:var(--mono)';label.innerHTML='<span style="font-size:22px">\ud83d\udcf7</span><span>Ajouter</span>';
+    var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.capture='environment';inp.style.display='none';
     inp.onchange=function(){if(inp.files[0])uploadPhoto(placeId,inp.files[0],label);};
-    label.appendChild(inp);addEl.appendChild(label);
+    label.appendChild(inp);wrap.appendChild(label);
   }
 }
 function loadPhotosForDet(placeId){
   var wrap=document.getElementById('det-photos-'+placeId);if(!wrap)return;
   if(photoCache[placeId]!==undefined){renderPhotoSection(placeId);return;}
   wrap.innerHTML='<div style="width:88px;height:88px;border-radius:12px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div></div>';
-  var photos=lsGetPhotos('photo_'+activeCityId+'_'+placeId+'_');photoCache[placeId]=photos;renderPhotoSection(placeId);
+  var prefix='photo_'+activeCityId+'_'+placeId+'_';
+  idbGetPhotos(prefix,function(localPhotos){
+    // Toujours afficher les photos locales immédiatement, sans attendre Firebase
+    photoCache[placeId]=localPhotos;
+    renderPhotoSection(placeId);
+  });
 }
 window.uploadPhoto=function(placeId,file,triggerEl){
-  if(!window._fb)return;
   triggerEl.style.cssText='width:88px;height:88px;border-radius:12px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0';
   triggerEl.innerHTML='<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>';
   compressImage(file,1200,.82,function(blob){
-    var key='photo_'+activeCityId+'_'+placeId+'_'+Date.now();
-    lsSavePhoto(key,dataUrl);if(!photoCache[placeId])photoCache[placeId]=[];photoCache[placeId].push({path:key,url:dataUrl});renderPhotoSection(placeId);
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var dataUrl=e.target.result;
+      var key='photo_'+activeCityId+'_'+placeId+'_'+Date.now();
+      idbSavePhoto(key,dataUrl,function(){
+        if(!photoCache[placeId])photoCache[placeId]=[];
+        photoCache[placeId].push({path:key,url:dataUrl});
+        renderPhotoSection(placeId);
+      });
+      if(window._fb){window._fb.uploadPhoto(activeCityId,placeId,blob,(photoCache[placeId]||[]).length).catch(function(){});}
+    };
+    reader.readAsDataURL(blob);
   });
 };
 window.delPhoto=function(placeId,path){
   if(!confirm('Supprimer cette photo ?'))return;
+  idbDeletePhoto(path,function(){
+    photoCache[placeId]=(photoCache[placeId]||[]).filter(function(ph){return ph.path!==path;});
+    renderPhotoSection(placeId);
+  });
   if(window._fb)window._fb.deletePhoto(path);
-  photoCache[placeId]=(photoCache[placeId]||[]).filter(function(ph){return ph.path!==path;});
-  renderPhotoSection(placeId);
 };
 window.openLb=function(url){document.getElementById('lb-img').src=url;document.getElementById('lb-ov').style.display='flex';};
 window.closeLb=function(){document.getElementById('lb-ov').style.display='none';document.getElementById('lb-img').src='';};
+
+// ── SERVICE WORKER : mode hors-ligne ─────────────────────────────────────────
+if('serviceWorker' in navigator){
+  var swCode=[
+    "const CACHE='myplaces-v1';",
+    "self.addEventListener('install',e=>self.skipWaiting());",
+    "self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));",
+    "self.addEventListener('fetch',e=>{",
+    "  const url=e.request.url;",
+    "  if(url.includes('cartocdn.com')||url.includes('fonts.g')||url.includes('unpkg.com')||url.includes('gstatic.com')||url.includes('googleapis.com')){",
+    "    e.respondWith(caches.match(e.request).then(cached=>{",
+    "      if(cached)return cached;",
+    "      return fetch(e.request).then(res=>{",
+    "        if(res&&res.status===200){var clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}",
+    "        return res;",
+    "      }).catch(()=>cached||new Response('',{status:503}));",
+    "    }));",
+    "  }",
+    "});"
+  ].join('\n');
+  var swBlob=new Blob([swCode],{type:'application/javascript'});
+  var swUrl=URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).then(function(){
+    window.addEventListener('online',function(){showConnBanner(false);});
+    window.addEventListener('offline',function(){showConnBanner(true);});
+    if(!navigator.onLine)showConnBanner(true);
+  }).catch(function(){});
+}
+function showConnBanner(offline){
+  var b=document.getElementById('offline-banner');
+  if(!b){
+    b=document.createElement('div');b.id='offline-banner';
+    b.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);left:50%;transform:translateX(-50%);background:#1A1714;color:white;font-size:11px;font-family:var(--mono);letter-spacing:.06em;padding:8px 18px;border-radius:20px;z-index:500;transition:opacity .4s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.35)';
+    document.body.appendChild(b);
+  }
+  b.style.display='block';b.style.opacity='1';
+  if(offline){
+    b.textContent='\u25cb Hors-ligne \u00b7 donn\u00e9es locales';
+  }else{
+    b.textContent='\u25cf Connexion r\u00e9tablie';
+    setTimeout(function(){b.style.opacity='0';setTimeout(function(){b.style.display='none';},400);},2200);
+  }
+}
+
 
 // ── FIREBASE SYNC ──────────────────────────────────────────────────────────
 function showSync(msg,color){
