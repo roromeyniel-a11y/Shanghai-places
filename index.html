@@ -773,21 +773,21 @@ window.openDet=function(id){
     +'<span style="font-size:11px;color:var(--stone);font-family:var(--mono)">📍 '+p.district+'</span>'
     +'<span style="font-size:11px;color:'+pri.color+';font-weight:600;font-family:var(--mono)">● '+pri.label+'</span>'
     +'</div></div></div></div>'
+    +'<div id="det-photos-hero-'+p.id+'" style="background:var(--cream);border-bottom:1px solid var(--border);min-height:72px;padding:16px 20px 14px"></div>'
     +'<div class="sheet-body">'
     +'<div style="display:flex;gap:8px;margin-bottom:20px">'
     +'<button id="da-fav" onclick="togFav(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid;color:'+(p.favorite?'#C9A96E':'var(--stone)')+';background:'+(p.favorite?'rgba(201,169,110,.1)':'white')+';border-color:'+(p.favorite?'rgba(201,169,110,.4)':'var(--border-s)')+'">'+( p.favorite?'★ Favorited':'☆ Favorite')+'</button>'
     +'<button id="da-vis" onclick="togVis(\''+p.id+'\');refreshDet(\''+p.id+'\')" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid;color:'+(p.visited?'#6B8C6E':'var(--stone)')+';background:'+(p.visited?'rgba(107,140,110,.1)':'white')+';border-color:'+(p.visited?'rgba(107,140,110,.4)':'var(--border-s)')+'">'+( p.visited?'✓ Visited':'○ Mark visited')+'</button>'
     +'<button onclick="closeSh(\'det-sh\',\'det-ov\');setTimeout(function(){openForm(\''+p.id+'\');},100)" style="flex:1;padding:10px 6px;border-radius:10px;font-size:12px;font-family:var(--mono);text-align:center;border:1px solid var(--border-s);background:white;color:var(--stone)">✎ Edit</button>'
     +'</div>'
-    +(p.address?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Address</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.5">'+p.address+'</div></div>':'')
-    +(p.mapLink?'<div style="margin-bottom:16px"><a href="'+p.mapLink+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:rgba(74,123,140,.08);border:1px solid rgba(74,123,140,.2);color:#4A7B8C;font-size:13px;font-weight:500;text-decoration:none;font-family:var(--mono)">◎ Open in maps app</a></div>':'')
     +(p.notes?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Notes</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.7;background:var(--cream);padding:14px;border-radius:12px;border-left:3px solid '+cat.color+'50">'+p.notes+'</div></div>':'')
     +outH
-    +(p.source?'<div style="margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--cream);border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--stone)">Discovered via · '+p.source+'</div>':'')
-    +'<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Photos</div><div id="det-photos-'+p.id+'" style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px"></div></div>'
+    +(p.address?'<div style="margin-bottom:16px"><div style="font-size:11px;font-family:var(--mono);color:var(--stone);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Address</div><div style="font-size:14px;color:var(--ink-soft);line-height:1.5">'+p.address+'</div></div>':'')
+    +(p.mapLink?'<div style="margin-bottom:16px"><a href="'+p.mapLink+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:rgba(74,123,140,.08);border:1px solid rgba(74,123,140,.2);color:#4A7B8C;font-size:13px;font-weight:500;text-decoration:none;font-family:var(--mono)">◎ Open in maps app</a></div>':'')
+    +(p.source?'<div style="margin-bottom:16px;padding:10px 14px;border-radius:10px;background:var(--cream);border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--stone)">Discovered via · '+p.source+'</div>':'')
     +'</div>';
   openSh('det-sh','det-ov');
-  setTimeout(function(){loadPhotosForDet(p.id);},100);
+  setTimeout(function(){loadPhotosForDetHero(p.id);},100);
 };
 window.refreshDet=function(id){
   var p=P().find(function(x){return x.id===id;});if(!p)return;
@@ -1086,32 +1086,69 @@ function compressImage(file,maxPx,quality,cb){
   };reader.readAsDataURL(file);
 }
 function renderPhotoSection(placeId){
-  var wrap=document.getElementById('det-photos-'+placeId);if(!wrap)return;
-  var photos=photoCache[placeId]||[];wrap.innerHTML='';
-  photos.forEach(function(ph){
-    var t=document.createElement('div');t.style.cssText='position:relative;flex-shrink:0';
-    var img=document.createElement('img');img.src=ph.url;img.style.cssText='width:88px;height:88px;border-radius:12px;object-fit:cover;cursor:pointer;border:1px solid var(--border);display:block';img.onclick=function(){openLb(ph.url);};t.appendChild(img);
-    var del=document.createElement('button');del.innerHTML='×';del.style.cssText='position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(26,23,20,.65);color:white;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';del.onclick=function(e){e.stopPropagation();delPhoto(placeId,ph.path);};t.appendChild(del);
-    wrap.appendChild(t);
-  });
-  if(photos.length<3){
-    var label=document.createElement('label');label.style.cssText='width:88px;height:88px;border-radius:12px;border:1.5px dashed var(--border-s);background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;color:var(--stone);font-size:11px;font-family:var(--mono)';label.innerHTML='<span style="font-size:22px">📷</span><span>Ajouter</span>';
-    var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';
-    inp.onchange=function(){if(inp.files[0])uploadPhoto(placeId,inp.files[0],label);};
-    label.appendChild(inp);wrap.appendChild(label);
+  var wrap=document.getElementById('det-photos-hero-'+placeId);if(!wrap)return;
+  var photos=photoCache[placeId]||[];
+  wrap.innerHTML='';
+
+  // If we have photos, render a prominent horizontal strip
+  if(photos.length){
+    var strip=document.createElement('div');
+    strip.style.cssText='display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px';
+    photos.forEach(function(ph){
+      var t=document.createElement('div');t.style.cssText='position:relative;flex-shrink:0';
+      var img=document.createElement('img');
+      img.src=ph.url;
+      img.style.cssText='width:140px;height:140px;border-radius:14px;object-fit:cover;cursor:pointer;border:1px solid var(--border);display:block;box-shadow:0 2px 8px rgba(26,23,20,.08)';
+      img.onclick=function(){openLb(ph.url);};
+      t.appendChild(img);
+      var del=document.createElement('button');
+      del.innerHTML='×';
+      del.style.cssText='position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(26,23,20,.6);color:white;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2)';
+      del.onclick=function(e){e.stopPropagation();delPhoto(placeId,ph.path);};
+      t.appendChild(del);
+      strip.appendChild(t);
+    });
+
+    // Add-photo tile at the end of the strip (always visible)
+    var addTile=document.createElement('label');
+    addTile.style.cssText='width:140px;height:140px;border-radius:14px;border:1.5px dashed var(--border-s);background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;flex-shrink:0;color:var(--stone);transition:background .15s';
+    addTile.innerHTML='<span style="font-size:28px;line-height:1">📷</span><span style="font-size:11px;font-family:var(--mono);letter-spacing:.04em">Ajouter</span>';
+    var addInp=document.createElement('input');addInp.type='file';addInp.accept='image/*';addInp.style.display='none';
+    addInp.onchange=function(){if(addInp.files[0])uploadPhoto(placeId,addInp.files[0],addTile);};
+    addTile.appendChild(addInp);
+    strip.appendChild(addTile);
+    wrap.appendChild(strip);
+
+  } else {
+    // No photos yet — show a wide add-photo call-to-action banner
+    var banner=document.createElement('label');
+    banner.style.cssText='display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border-radius:14px;border:1.5px dashed var(--border-s);background:white;cursor:pointer;color:var(--stone);transition:background .15s';
+    banner.innerHTML='<span style="font-size:32px;line-height:1;flex-shrink:0">📷</span>'
+      +'<div><div style="font-size:14px;font-weight:600;color:var(--ink-soft);font-family:var(--sans)">Ajouter des photos</div>'
+      +'<div style="font-size:11px;font-family:var(--mono);color:var(--stone-light);margin-top:2px">Galerie ou appareil photo</div></div>';
+    var bannerInp=document.createElement('input');bannerInp.type='file';bannerInp.accept='image/*';bannerInp.style.display='none';
+    bannerInp.onchange=function(){if(bannerInp.files[0])uploadPhoto(placeId,bannerInp.files[0],banner);};
+    banner.appendChild(bannerInp);
+    wrap.appendChild(banner);
   }
 }
-function loadPhotosForDet(placeId){
-  var wrap=document.getElementById('det-photos-'+placeId);if(!wrap)return;
+
+function loadPhotosForDetHero(placeId){
+  var wrap=document.getElementById('det-photos-hero-'+placeId);if(!wrap)return;
   if(photoCache[placeId]!==undefined){renderPhotoSection(placeId);return;}
-  wrap.innerHTML='<div style="width:88px;height:88px;border-radius:12px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div></div>';
+  // Show loading spinner while fetching
+  wrap.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div><span style="font-size:12px;font-family:var(--mono);color:var(--stone-light)">Chargement photos…</span></div>';
   if(!window._fb){photoCache[placeId]=[];renderPhotoSection(placeId);return;}
   window._fb.listPhotos(activeCityId,placeId).then(function(photos){photoCache[placeId]=photos;renderPhotoSection(placeId);});
 }
+
+// Keep old name as alias for any other callers
+function loadPhotosForDet(placeId){loadPhotosForDetHero(placeId);}
 window.uploadPhoto=function(placeId,file,triggerEl){
   if(!window._fb)return;
-  triggerEl.style.cssText='width:88px;height:88px;border-radius:12px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0';
-  triggerEl.innerHTML='<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>';
+  // Show a spinner inside the trigger while uploading
+  triggerEl.style.cssText='width:140px;height:140px;border-radius:14px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0';
+  triggerEl.innerHTML='<div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>';
   compressImage(file,1200,.82,function(blob){
     var slot=(photoCache[placeId]||[]).length;
     window._fb.uploadPhoto(activeCityId,placeId,blob,slot).then(function(ph){
@@ -1123,7 +1160,7 @@ window.delPhoto=function(placeId,path){
   if(!confirm('Supprimer cette photo ?'))return;
   if(window._fb)window._fb.deletePhoto(path);
   photoCache[placeId]=(photoCache[placeId]||[]).filter(function(ph){return ph.path!==path;});
-  renderPhotoSection(placeId);
+  renderPhotoSection(placeId); // re-renders into det-photos-hero-{id}
 };
 window.openLb=function(url){document.getElementById('lb-img').src=url;document.getElementById('lb-ov').style.display='flex';};
 window.closeLb=function(){document.getElementById('lb-ov').style.display='none';document.getElementById('lb-img').src='';};
