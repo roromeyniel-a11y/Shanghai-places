@@ -1138,8 +1138,39 @@ function loadPhotosForDetHero(placeId){
   if(photoCache[placeId]!==undefined){renderPhotoSection(placeId);return;}
   // Show loading spinner while fetching
   wrap.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div><span style="font-size:12px;font-family:var(--mono);color:var(--stone-light)">Chargement photos…</span></div>';
-  if(!window._fb){photoCache[placeId]=[];renderPhotoSection(placeId);return;}
-  window._fb.listPhotos(activeCityId,placeId).then(function(photos){photoCache[placeId]=photos;renderPhotoSection(placeId);});
+
+  function doLoad(){
+    if(!window._fb){photoCache[placeId]=[];renderPhotoSection(placeId);return;}
+    // Safety timeout — if Firebase doesn't respond in 5s, show empty state
+    var timedOut=false;
+    var timer=setTimeout(function(){
+      timedOut=true;
+      photoCache[placeId]=[];
+      renderPhotoSection(placeId);
+    },5000);
+    window._fb.listPhotos(activeCityId,placeId).then(function(photos){
+      if(timedOut)return;
+      clearTimeout(timer);
+      photoCache[placeId]=photos;
+      renderPhotoSection(placeId);
+    }).catch(function(){
+      if(timedOut)return;
+      clearTimeout(timer);
+      photoCache[placeId]=[];
+      renderPhotoSection(placeId);
+    });
+  }
+
+  // If Firebase module not yet ready, wait for it (max 3s then give up)
+  if(window._fbReady){doLoad();}
+  else{
+    var waited=0;
+    var poll=setInterval(function(){
+      waited+=100;
+      if(window._fbReady){clearInterval(poll);doLoad();}
+      else if(waited>=3000){clearInterval(poll);photoCache[placeId]=[];renderPhotoSection(placeId);}
+    },100);
+  }
 }
 
 // Keep old name as alias for any other callers
