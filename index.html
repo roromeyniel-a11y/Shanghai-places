@@ -343,12 +343,17 @@
     <div class="field"><label class="label">Priority</label><div class="pri-btns" id="f-pris"></div></div>
     <div class="field"><label class="label">Address</label><input class="input" id="f-addr" placeholder="Street address…"/></div>
     <div class="field">
-      <label class="label">Coordinates (for map pin)</label>
+      <label class="label">📍 Lien Amap <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(colle un lien → coordonnées extraites auto)</span></label>
+      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
+        <input class="input" id="f-amap-link-input" placeholder="https://amap.com/… ou https://surl.amap.com/…" style="flex:1;font-family:var(--mono);font-size:13px"/>
+        <button onclick="parseFormAmapLink()" style="padding:12px 14px;border-radius:12px;background:var(--ink);color:white;font-size:13px;font-weight:600;flex-shrink:0;white-space:nowrap">Extraire</button>
+      </div>
+      <div id="f-amap-status" style="display:none;font-size:12px;font-family:var(--mono);padding:8px 12px;border-radius:8px;margin-bottom:10px"></div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-bottom:6px">Ou manuellement :</div>
       <div class="grid-2" style="margin-bottom:8px">
         <input class="input" id="f-lat" placeholder="Latitude" inputmode="decimal"/>
         <input class="input" id="f-lng" placeholder="Longitude" inputmode="decimal"/>
       </div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-bottom:8px">Source :</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="tag-btn" id="coord-src-amap" onclick="setCoordSrc('amap')">📍 Amap / WeChat (GCJ-02)</button>
         <button class="tag-btn" id="coord-src-google" onclick="setCoordSrc('google')">🌍 Google Maps (WGS-84)</button>
@@ -416,7 +421,8 @@
   <div class="sheet-body">
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px" id="set-stats"></div>
     <div style="font-size:13px;font-family:var(--serif);color:var(--stone);margin-bottom:12px;font-weight:500">Import depuis Maps</div>
-    <button id="maps-import-btn" style="width:100%;padding:14px;border-radius:12px;margin-bottom:16px;background:white;border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:8px">&#x1F5FA; Coller un lien Amap ou Google Maps</button>
+    <button id="maps-import-btn" style="width:100%;padding:14px;border-radius:12px;margin-bottom:10px;background:white;border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:8px">&#x1F5FA; Coller un lien Amap ou Google Maps</button>
+    <button id="bulk-import-btn" style="width:100%;padding:14px;border-radius:12px;margin-bottom:16px;background:linear-gradient(135deg,#E8F0E8,#EEF0E8);border:1px solid rgba(107,140,110,.3);font-size:14px;font-weight:600;color:#4A6B4A;display:flex;align-items:center;justify-content:center;gap:8px">📍 Import en masse — plusieurs liens Amap</button>
     <div style="font-size:13px;font-family:var(--serif);color:var(--stone);margin-bottom:12px;font-weight:500">Export &amp; Import</div>
     <button id="pdf-export-btn" style="width:100%;padding:14px;border-radius:12px;margin-bottom:10px;background:var(--ink);color:white;border:none;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">&#x1F4C4; Exporter en PDF guide de voyage</button>
     <button id="exp-btn" style="width:100%;padding:14px;border-radius:12px;margin-bottom:10px;background:white;border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--ink-soft)">↓ Export places as JSON</button>
@@ -462,6 +468,29 @@
     <div id="pdfexp-list" style="max-height:38vh;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:12px"></div>
     <div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-bottom:16px" id="pdfexp-count">0 places s&#xE9;lectionn&#xE9;es</div>
     <button id="pdfexp-generate" class="save-btn">&#x1F4C4; G&#xE9;n&#xE9;rer le PDF</button>
+  </div>
+</div>
+
+<!-- BULK AMAP IMPORT SHEET -->
+<div class="overlay" id="bulk-ov"></div>
+<div class="sheet" id="bulk-sh">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div>
+      <div class="sheet-title">📍 Import Amap en masse</div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-top:2px">Colle plusieurs liens, un par ligne</div>
+    </div>
+    <button class="close-btn" id="bulk-x">×</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label class="label">Liens Amap <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(un par ligne)</span></label>
+      <textarea class="input" id="bulk-links" style="min-height:160px;font-family:var(--mono);font-size:12px;line-height:1.8" placeholder="https://surl.amap.com/abc123&#10;https://amap.com/place/B001…&#10;https://uri.amap.com/marker?position=…"></textarea>
+    </div>
+    <div id="bulk-status" style="display:none;margin-bottom:14px"></div>
+    <div id="bulk-preview" style="display:none;max-height:35vh;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px"></div>
+    <button id="bulk-parse-btn" class="save-btn">🔍 Analyser les liens</button>
+    <button id="bulk-add-btn" class="save-btn" style="display:none;background:var(--sage)">✓ Ajouter tous les lieux</button>
   </div>
 </div>
 
@@ -893,6 +922,7 @@ window.openForm=function(id,defs){
   document.getElementById('f-emoji').value=fmEmoji;
   document.getElementById('f-emoji-preview').textContent=fmEmoji||getDefEmoji();
   if(!p){coordSrc=AC().coordSrcDefault||'google';syncCoordUI();}
+  document.getElementById('f-amap-link-input').value='';document.getElementById('f-amap-status').style.display='none';
   document.getElementById('form-ttl').textContent=p?'Edit Place':'Add Place';
   document.getElementById('form-save').textContent=p?'Save changes':'Add to '+AC().name;
   document.getElementById('form-del').style.display=p?'block':'none';
@@ -923,11 +953,13 @@ function doInitMap(){
   touchZoom:true,           // pinch zoom
   tap:false                 // évite conflits sur iOS
 });
-  // Colorful illustrated tile - Stadia Alidade Smooth Color
-L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-  maxZoom:20,
-  minZoom:3
+  // Amap (AutoNavi 高德地图) tiles
+L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{
+  attribution:'&copy; <a href="https://amap.com">高德地图 AutoNavi</a>',
+  subdomains:'1234',
+  maxZoom:19,
+  minZoom:3,
+  tileSize:256
 }).addTo(mapInst);
   // ── Custom zoom controls ─────────────────────────────────────────────
   var zoomCtrl=L.control({position:'bottomright'});
@@ -1625,6 +1657,183 @@ function generatePDF(places) {
     setTimeout(function() { win.print(); }, 400);
   };
 }
+
+
+// ── AMAP LINK PARSER (formulaire + import en masse) ────────────────────────
+
+/**
+ * Extrait nom, coordonnées GCJ-02, adresse depuis un lien Amap.
+ * Formats supportés :
+ *   - https://uri.amap.com/marker?position=lng,lat&name=NOM&address=ADDR
+ *   - https://www.amap.com/place/POIID  (on lit le titre de page via proxy CORS)
+ *   - https://surl.amap.com/XXXX       (lien court, même logique)
+ *   - https://www.amap.com/search?query=NOM&...
+ *   - Tout URL avec position= ou location= param
+ */
+function parseAmapLinkFull(url){
+  url=url.trim();
+  var result={name:'',lat:null,lng:null,addr:'',mapLink:url};
+
+  // position=lng,lat (Amap = lng d'abord !)
+  var pos=url.match(/[?&]position=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(pos){result.lng=parseFloat(pos[1]);result.lat=parseFloat(pos[2]);}
+
+  // location=lng,lat
+  var loc=url.match(/[?&]location=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(loc){result.lng=parseFloat(loc[1]);result.lat=parseFloat(loc[2]);}
+
+  // Parfois lat,lng dans le hash ou path : @lat,lng
+  var atCoord=url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(atCoord&&!result.lat){result.lat=parseFloat(atCoord[1]);result.lng=parseFloat(atCoord[2]);}
+
+  // name=
+  var nm=url.match(/[?&]name=([^&]+)/);
+  if(nm)result.name=decodeURIComponent(nm[1].replace(/\+/g,' '));
+
+  // address= / addr=
+  var ad=url.match(/[?&](?:address|addr)=([^&]+)/);
+  if(ad)result.addr=decodeURIComponent(ad[1].replace(/\+/g,' '));
+
+  // keywords= / query= (pour /search)
+  var kw=url.match(/[?&](?:keywords?|query|keyword)=([^&]+)/);
+  if(kw&&!result.name)result.name=decodeURIComponent(kw[1].replace(/\+/g,' '));
+
+  return result;
+}
+
+// Applique la conversion GCJ-02 → WGS-84 et remplit les champs du formulaire
+function applyAmapResult(r, statusEl){
+  if(r.lat&&r.lng){
+    // Convertir GCJ-02 → WGS-84 pour Leaflet
+    var wgs=gcjToWgs(r.lat,r.lng);
+    document.getElementById('f-lat').value=wgs.lat;
+    document.getElementById('f-lng').value=wgs.lng;
+    coordSrc='amap'; syncCoordUI();
+    // stocker les coords GCJ brutes dans les champs (le save va re-convertir)
+    document.getElementById('f-lat').value=r.lat;
+    document.getElementById('f-lng').value=r.lng;
+    coordSrc='amap'; syncCoordUI();
+  }
+  if(r.name&&!document.getElementById('f-name').value)
+    document.getElementById('f-name').value=r.name;
+  if(r.addr&&!document.getElementById('f-addr').value)
+    document.getElementById('f-addr').value=r.addr;
+  if(r.mapLink&&!document.getElementById('f-link').value)
+    document.getElementById('f-link').value=r.mapLink;
+
+  if(statusEl){
+    var ok=r.lat&&r.lng;
+    statusEl.style.display='block';
+    statusEl.style.background=ok?'rgba(107,140,110,.08)':'rgba(201,169,110,.08)';
+    statusEl.style.color=ok?'var(--sage)':'var(--gold)';
+    statusEl.style.border='1px solid '+(ok?'rgba(107,140,110,.2)':'rgba(201,169,110,.3)');
+    statusEl.textContent=ok
+      ?'✓ '+(r.name||'Lieu')+(r.addr?' — '+r.addr:'')
+      :'⚠ Coordonnées non trouvées — remplis manuellement';
+  }
+}
+
+// Bouton "Extraire" dans le formulaire (lien unique)
+window.parseFormAmapLink=function(){
+  var url=document.getElementById('f-amap-link-input').value.trim();
+  var st=document.getElementById('f-amap-status');
+  if(!url){
+    st.style.display='block';st.style.background='rgba(184,92,56,.08)';
+    st.style.color='var(--rust)';st.style.border='1px solid rgba(184,92,56,.2)';
+    st.textContent='⚠ Colle un lien Amap';return;
+  }
+  var r=parseAmapLinkFull(url);
+  applyAmapResult(r,st);
+};
+
+// Auto-extraction quand on colle dans le champ lien du formulaire
+document.getElementById('f-amap-link-input').addEventListener('paste',function(e){
+  setTimeout(function(){window.parseFormAmapLink();},50);
+});
+document.getElementById('f-amap-link-input').addEventListener('input',function(){
+  // reset status si on efface
+  if(!this.value){
+    document.getElementById('f-amap-status').style.display='none';
+  }
+});
+
+// ── IMPORT EN MASSE ──────────────────────────────────────────────────────────
+var bulkResults=[];
+
+document.getElementById('bulk-import-btn').addEventListener('click',function(){
+  document.getElementById('bulk-links').value='';
+  document.getElementById('bulk-status').style.display='none';
+  document.getElementById('bulk-preview').style.display='none';
+  document.getElementById('bulk-add-btn').style.display='none';
+  bulkResults=[];
+  openSh('bulk-sh','bulk-ov');
+});
+document.getElementById('bulk-x').addEventListener('click',function(){closeSh('bulk-sh','bulk-ov');});
+document.getElementById('bulk-ov').addEventListener('click',function(){closeSh('bulk-sh','bulk-ov');});
+
+document.getElementById('bulk-parse-btn').addEventListener('click',function(){
+  var raw=document.getElementById('bulk-links').value.trim();
+  if(!raw){return;}
+  var lines=raw.split(/\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>4;});
+  bulkResults=lines.map(function(url){
+    var r=parseAmapLinkFull(url);
+    return r;
+  });
+
+  var okCount=bulkResults.filter(function(r){return r.lat&&r.lng;}).length;
+  var st=document.getElementById('bulk-status');
+  st.style.display='block';
+  st.innerHTML='<div style="font-size:12px;font-family:var(--mono);padding:10px 12px;border-radius:8px;background:rgba(107,140,110,.08);border:1px solid rgba(107,140,110,.2);color:var(--sage)">'
+    +'✓ '+bulkResults.length+' lien'+(bulkResults.length>1?'s':'')+' analysé'+(bulkResults.length>1?'s':'')+' · '
+    +okCount+' avec coordonnées'
+    +(okCount<bulkResults.length?' · <span style="color:var(--gold)">'+(bulkResults.length-okCount)+' sans coords</span>':'')
+    +'</div>';
+
+  // Preview cards
+  var preview=document.getElementById('bulk-preview');
+  preview.style.display='block';
+  preview.innerHTML=bulkResults.map(function(r,i){
+    var hasCoords=r.lat&&r.lng;
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:'+(hasCoords?'white':'rgba(201,169,110,.04)')+'">'      +'<div style="width:32px;height:32px;border-radius:8px;background:'+(hasCoords?'rgba(107,140,110,.12)':'rgba(201,169,110,.12)')+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(hasCoords?'📍':'⚠')+'</div>'      +'<div style="flex:1;min-width:0">'      +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.name||'(nom non détecté)')+'</div>'      +'<div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-top:2px">'+(hasCoords?r.lat.toFixed(4)+', '+r.lng.toFixed(4)+' (GCJ-02)':'Coordonnées manquantes')+'</div>'      +(r.addr?'<div style="font-size:11px;color:var(--stone-light);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.addr+'</div>':'')      +'</div></div>';
+  }).join('');
+
+  document.getElementById('bulk-add-btn').style.display=bulkResults.length?'block':'none';
+  document.getElementById('bulk-add-btn').textContent='✓ Ajouter '+bulkResults.length+' lieu'+(bulkResults.length>1?'x':'');
+});
+
+document.getElementById('bulk-add-btn').addEventListener('click',function(){
+  var places=P(),added=0;
+  bulkResults.forEach(function(r){
+    var fLat=null,fLng=null;
+    if(r.lat&&r.lng){
+      var wgs=gcjToWgs(r.lat,r.lng);
+      fLat=wgs.lat;fLng=wgs.lng;
+    }
+    var np={
+      id:uid(),name:r.name||'Lieu sans nom',
+      category:fmCat||'restaurant',
+      district:getCityDists()[0]||'',
+      priority:'interesting',
+      address:r.addr||'',
+      lat:fLat,lng:fLng,
+      mapLink:r.mapLink||'',
+      notes:'',outings:[],
+      visited:false,favorite:false,
+      source:'Amap import',subcat:'',customEmoji:''
+    };
+    places.push(np);
+    if(window._fb)window._fb.savePlace(activeCityId,np);
+    added++;
+  });
+  setP(places);
+  closeSh('bulk-sh','bulk-ov');
+  closeSh('set-sh','set-ov');
+  renderHome();
+  if(mapInit)renderPins();
+  setTimeout(function(){
+    alert(added+' lieu'+(added>1?'x':'')+' ajouté'+(added>1?'s':'')+' ! Pense à éditer chaque lieu pour compléter la catégorie et le district.');
+  },300);
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 ensureCache(activeCityId);
