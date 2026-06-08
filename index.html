@@ -108,7 +108,7 @@
     .stat-num{font-size:28px;font-family:var(--serif);font-weight:300}
     .stat-label{font-size:10px;font-family:var(--mono);color:var(--stone);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
     #map{flex:1}
-    .leaflet-container{background:#E8E0D5!important}
+    .leaflet-container{background:#E8DFD0!important}
     .leaflet-popup-content-wrapper{background:white;border-radius:16px!important;box-shadow:var(--sh-lg)!important;border:1px solid var(--border);padding:0!important}
     .leaflet-popup-content{margin:0!important}
     .leaflet-popup-tip-container{display:none}
@@ -142,6 +142,21 @@
     .nc-emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:6px}
     .nc-emoji-btn{width:100%;aspect-ratio:1;border-radius:10px;font-size:20px;background:white;border:1.5px solid var(--border-s);display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer}
     .nc-emoji-btn.sel{border-color:var(--ink);background:var(--gold-light)}
+
+
+    /* ── Custom zoom controls ── */
+    .custom-zoom-ctrl{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:80px;margin-right:14px;filter:drop-shadow(0 4px 16px rgba(26,23,20,.18))}
+    .z-btn{width:40px;height:40px;border-radius:12px;background:white;border:1px solid var(--border);font-size:22px;font-weight:300;color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;line-height:1}
+    .z-btn:active{background:var(--cream)}
+    .z-slider-wrap{height:120px;display:flex;align-items:center;justify-content:center;background:white;border-radius:12px;border:1px solid var(--border);padding:12px 0;width:40px}
+    .z-slider{-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;appearance:slider-vertical;width:6px;height:96px;cursor:pointer;accent-color:var(--gold)}
+    /* Fallback for browsers not supporting slider-vertical */
+    @supports not (writing-mode:vertical-lr){
+      .z-slider-wrap{height:40px;width:120px;flex-direction:row}
+      .z-slider{writing-mode:horizontal-tb;direction:ltr;width:96px;height:6px;-webkit-appearance:auto;appearance:auto}
+    }
+    /* Leaflet map background */
+    .leaflet-container{background:#E8DFD0!important}
 
     /* ── Optimisation : classes utilitaires ── */
     .ic{display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -899,8 +914,34 @@ function initMap(){
 function doInitMap(){
   if(mapInit)return;mapInit=true;
   var c=AC();
-  mapInst=L.map('map',{center:[c.lat||31.2304,c.lng||121.4737],zoom:c.zoom||13});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/attributions">CARTO</a>',subdomains:'abcd',maxZoom:20}).addTo(mapInst);
+  mapInst=L.map('map',{
+  center:[c.lat||31.2304,c.lng||121.4737],
+  zoom:c.zoom||13,
+  zoomControl:false,        // on remet nos propres boutons
+  doubleClickZoom:true,     // double-click/tap = zoom in
+  scrollWheelZoom:true,
+  touchZoom:true,           // pinch zoom
+  tap:false                 // évite conflits sur iOS
+});
+  // Colorful illustrated tile - Stadia Alidade Smooth Color
+L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  maxZoom:20,
+  minZoom:3
+}).addTo(mapInst);
+  // ── Custom zoom controls ─────────────────────────────────────────────
+  var zoomCtrl=L.control({position:'bottomright'});
+  zoomCtrl.onAdd=function(){
+    var div=L.DomUtil.create('div','custom-zoom-ctrl');
+    div.innerHTML='<button class="z-btn" id="z-in">+</button><div class="z-slider-wrap"><input type="range" id="z-slider" class="z-slider" min="3" max="19" step="1" value="'+(c.zoom||13)+'" orient="vertical"/></div><button class="z-btn" id="z-out">−</button>';
+    L.DomEvent.disableClickPropagation(div);return div;
+  };
+  zoomCtrl.addTo(mapInst);
+  mapInst.on('zoomend',function(){var sl=document.getElementById('z-slider');if(sl)sl.value=mapInst.getZoom();});
+  mapInst.on('dblclick',function(e){mapInst.setZoomAround(e.latlng,mapInst.getZoom()+1,{animate:true,duration:0.3});});
+  document.addEventListener('input',function(e){if(e.target&&e.target.id==='z-slider')mapInst.setZoom(parseInt(e.target.value),{animate:true});});
+  document.addEventListener('click',function(e){if(e.target&&e.target.id==='z-in')mapInst.zoomIn(1);if(e.target&&e.target.id==='z-out')mapInst.zoomOut(1);});
+
   renderPins();
 }
 var uMark=null,uCircle=null;
