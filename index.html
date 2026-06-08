@@ -326,47 +326,64 @@
   <div class="sheet-header"><div class="sheet-title" id="form-ttl">Add Place</div><button class="close-btn" id="form-x">×</button></div>
   <div class="sheet-body">
     <input type="hidden" id="f-id"/>
-    <div class="field"><label class="label">Name *</label><input class="input" id="f-name" placeholder="Place name…"/></div>
-    <div class="field"><label class="label">Category</label><div class="grid-3" id="f-cats"></div></div>
+
+    <!-- ── LIEN AMAP EN PREMIER ── -->
+    <div class="field" id="f-amap-field">
+      <label class="label">📍 Lien Amap</label>
+      <div style="position:relative">
+        <input class="input" id="f-amap-link-input"
+          placeholder="Colle ton lien Amap ici…"
+          style="font-family:var(--mono);font-size:13px;padding-right:90px"/>
+        <button onclick="parseFormAmapLink()"
+          style="position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:6px 12px;border-radius:8px;background:var(--ink);color:white;font-size:12px;font-weight:600">
+          Extraire
+        </button>
+      </div>
+      <div id="f-amap-status" style="display:none;font-size:12px;font-family:var(--mono);padding:8px 12px;border-radius:8px;margin-top:8px;line-height:1.5"></div>
+    </div>
+
+    <div class="field"><label class="label">Nom *</label><input class="input" id="f-name" placeholder="Nom du lieu…"/></div>
+    <div class="field"><label class="label">Catégorie</label><div class="grid-3" id="f-cats"></div></div>
     <div class="field" id="f-subcat-field" style="display:none">
       <label class="label">Type <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(optionnel)</span></label>
       <div class="wrap-btns" id="f-subcats"></div>
     </div>
     <div class="field">
-      <label class="label">Emoji personnalisé <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+      <label class="label">Emoji <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(optionnel)</span></label>
       <div class="emoji-row">
         <div class="emoji-preview" id="f-emoji-preview">—</div>
         <input class="input" id="f-emoji" placeholder="🍣 🥟 🫕 🧋" style="flex:1;font-size:20px" maxlength="8"/>
       </div>
     </div>
     <div class="field"><label class="label">District</label><div class="wrap-btns" id="f-dists"></div></div>
-    <div class="field"><label class="label">Priority</label><div class="pri-btns" id="f-pris"></div></div>
-    <div class="field"><label class="label">Address</label><input class="input" id="f-addr" placeholder="Street address…"/></div>
-    <div class="field">
-      <label class="label">📍 Lien Amap <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(colle un lien → coordonnées extraites auto)</span></label>
-      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
-        <input class="input" id="f-amap-link-input" placeholder="https://amap.com/… ou https://surl.amap.com/…" style="flex:1;font-family:var(--mono);font-size:13px"/>
-        <button onclick="parseFormAmapLink()" style="padding:12px 14px;border-radius:12px;background:var(--ink);color:white;font-size:13px;font-weight:600;flex-shrink:0;white-space:nowrap">Extraire</button>
-      </div>
-      <div id="f-amap-status" style="display:none;font-size:12px;font-family:var(--mono);padding:8px 12px;border-radius:8px;margin-bottom:10px"></div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-bottom:6px">Ou manuellement :</div>
+    <div class="field"><label class="label">Priorité</label><div class="pri-btns" id="f-pris"></div></div>
+    <div class="field"><label class="label">Adresse</label><input class="input" id="f-addr" placeholder="Adresse…"/></div>
+
+    <!-- Coords masquées mais fonctionnelles -->
+    <div class="field" id="f-coords-field" style="display:none">
+      <label class="label">Coordonnées <span style="font-size:10px;opacity:.5;text-transform:none;letter-spacing:0">(remplies auto depuis le lien)</span></label>
       <div class="grid-2" style="margin-bottom:8px">
         <input class="input" id="f-lat" placeholder="Latitude" inputmode="decimal"/>
         <input class="input" id="f-lng" placeholder="Longitude" inputmode="decimal"/>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="tag-btn" id="coord-src-amap" onclick="setCoordSrc('amap')">📍 Amap / WeChat (GCJ-02)</button>
-        <button class="tag-btn" id="coord-src-google" onclick="setCoordSrc('google')">🌍 Google Maps (WGS-84)</button>
+        <button class="tag-btn" id="coord-src-amap" onclick="setCoordSrc('amap')">📍 Amap GCJ-02</button>
+        <button class="tag-btn" id="coord-src-google" onclick="setCoordSrc('google')">🌍 Google WGS-84</button>
       </div>
       <div id="coord-hint" style="font-size:11px;color:var(--sage);margin-top:6px;font-family:var(--mono)"></div>
     </div>
-    <div class="field"><label class="label">External Map Link</label><input class="input" id="f-link" placeholder="Maps link…"/></div>
-    <div class="field"><label class="label">Notes</label><textarea class="input" id="f-notes" placeholder="Tips, ambiance, why it's special…"></textarea></div>
-    <div class="field"><label class="label">Type of outing</label><div class="wrap-btns" id="f-outings"></div></div>
-    <div class="field"><label class="label">Status</label><div class="toggle-row"><button class="toggle-btn" id="f-vis-btn">○ Not visited</button><button class="toggle-btn" id="f-fav-btn">☆ Favorite</button></div></div>
-    <div class="field"><label class="label">Discovered via</label><input class="input" id="f-src" placeholder="Instagram, 小红书, friend…"/></div>
-    <button class="save-btn" id="form-save">Add to list</button>
-    <button class="del-btn" id="form-del" style="display:none">Delete place</button>
+    <button id="f-show-coords" onclick="document.getElementById('f-coords-field').style.display='block';this.style.display='none'"
+      style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-bottom:16px;padding:6px 0">
+      ＋ Saisir les coordonnées manuellement
+    </button>
+
+    <div class="field"><label class="label">Lien Maps externe</label><input class="input" id="f-link" placeholder="Lien Maps…"/></div>
+    <div class="field"><label class="label">Notes</label><textarea class="input" id="f-notes" placeholder="Ambiance, tips, pourquoi c'est spécial…"></textarea></div>
+    <div class="field"><label class="label">Bon pour</label><div class="wrap-btns" id="f-outings"></div></div>
+    <div class="field"><label class="label">Statut</label><div class="toggle-row"><button class="toggle-btn" id="f-vis-btn">○ Pas encore visité</button><button class="toggle-btn" id="f-fav-btn">☆ Favori</button></div></div>
+    <div class="field"><label class="label">Découvert via</label><input class="input" id="f-src" placeholder="Instagram, 小红书, ami…"/></div>
+    <button class="save-btn" id="form-save">Ajouter</button>
+    <button class="del-btn" id="form-del" style="display:none">Supprimer ce lieu</button>
   </div>
 </div>
 
@@ -922,7 +939,10 @@ window.openForm=function(id,defs){
   document.getElementById('f-emoji').value=fmEmoji;
   document.getElementById('f-emoji-preview').textContent=fmEmoji||getDefEmoji();
   if(!p){coordSrc=AC().coordSrcDefault||'google';syncCoordUI();}
-  document.getElementById('f-amap-link-input').value='';document.getElementById('f-amap-status').style.display='none';
+  document.getElementById('f-amap-link-input').value='';
+  document.getElementById('f-amap-status').style.display='none';
+  document.getElementById('f-coords-field').style.display='none';
+  document.getElementById('f-show-coords').style.display='block';
   document.getElementById('form-ttl').textContent=p?'Edit Place':'Add Place';
   document.getElementById('form-save').textContent=p?'Save changes':'Add to '+AC().name;
   document.getElementById('form-del').style.display=p?'block':'none';
@@ -947,11 +967,12 @@ function doInitMap(){
   mapInst=L.map('map',{
   center:[c.lat||31.2304,c.lng||121.4737],
   zoom:c.zoom||13,
-  zoomControl:false,        // on remet nos propres boutons
-  doubleClickZoom:true,     // double-click/tap = zoom in
+  zoomControl:false,
+  doubleClickZoom:false,    // on gère nous-mêmes pour mobile
   scrollWheelZoom:true,
-  touchZoom:true,           // pinch zoom
-  tap:false                 // évite conflits sur iOS
+  touchZoom:true,
+  tap:true,                 // nécessaire pour double-tap iOS
+  tapTolerance:15
 });
   // Amap tiles avec fallback OSM
   var amapLayer = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{
@@ -992,7 +1013,26 @@ function doInitMap(){
   };
   zoomCtrl.addTo(mapInst);
   mapInst.on('zoomend',function(){var sl=document.getElementById('z-slider');if(sl)sl.value=mapInst.getZoom();});
-  mapInst.on('dblclick',function(e){mapInst.setZoomAround(e.latlng,mapInst.getZoom()+1,{animate:true,duration:0.3});});
+  // Double-tap / double-click : zoom centré sur le point touché
+  // On gère manuellement pour que ça marche sur iOS Safari
+  var _lastTap = 0, _lastLatLng = null;
+  mapInst.on('click', function(e){
+    var now = Date.now();
+    var gap = now - _lastTap;
+    if(gap < 350 && gap > 30 && _lastLatLng){
+      // Double-tap détecté
+      mapInst.setZoomAround(_lastLatLng, mapInst.getZoom() + 1, {animate:true, duration:0.25});
+      _lastTap = 0; // reset pour éviter triple-tap
+    } else {
+      _lastTap = now;
+      _lastLatLng = e.latlng;
+    }
+  });
+  // Desktop : double-click natif
+  mapInst.on('dblclick', function(e){
+    L.DomEvent.stop(e.originalEvent);
+    mapInst.setZoomAround(e.latlng, mapInst.getZoom() + 1, {animate:true, duration:0.25});
+  });
   document.addEventListener('input',function(e){if(e.target&&e.target.id==='z-slider')mapInst.setZoom(parseInt(e.target.value),{animate:true});});
   document.addEventListener('click',function(e){if(e.target&&e.target.id==='z-in')mapInst.zoomIn(1);if(e.target&&e.target.id==='z-out')mapInst.zoomOut(1);});
 
@@ -1693,65 +1733,115 @@ function generatePDF(places) {
  *   - Tout URL avec position= ou location= param
  */
 function parseAmapLinkFull(url){
-  url=url.trim();
-  var result={name:'',lat:null,lng:null,addr:'',mapLink:url};
+  url = url.trim();
+  var result = {name:'', lat:null, lng:null, addr:'', mapLink:url};
 
-  // position=lng,lat (Amap = lng d'abord !)
-  var pos=url.match(/[?&]position=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if(pos){result.lng=parseFloat(pos[1]);result.lat=parseFloat(pos[2]);}
+  try {
+    var u = new URL(url);
+    var p = u.searchParams;
 
-  // location=lng,lat
-  var loc=url.match(/[?&]location=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if(loc){result.lng=parseFloat(loc[1]);result.lat=parseFloat(loc[2]);}
+    // ── position=lng,lat  (uri.amap.com/marker, surl.amap.com redirigés)
+    var pos = p.get('position') || p.get('pos');
+    if(pos){ var pp=pos.split(','); if(pp.length>=2){result.lng=parseFloat(pp[0]);result.lat=parseFloat(pp[1]);} }
 
-  // Parfois lat,lng dans le hash ou path : @lat,lng
-  var atCoord=url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if(atCoord&&!result.lat){result.lat=parseFloat(atCoord[1]);result.lng=parseFloat(atCoord[2]);}
+    // ── location=lng,lat
+    var loc = p.get('location');
+    if(loc){ var lp=loc.split(','); if(lp.length>=2){result.lng=parseFloat(lp[0]);result.lat=parseFloat(lp[1]);} }
 
-  // name=
-  var nm=url.match(/[?&]name=([^&]+)/);
-  if(nm)result.name=decodeURIComponent(nm[1].replace(/\+/g,' '));
+    // ── coordinate=lng,lat
+    var co = p.get('coordinate') || p.get('coord');
+    if(co && !result.lat){ var cp=co.split(','); if(cp.length>=2){result.lng=parseFloat(cp[0]);result.lat=parseFloat(cp[1]);} }
 
-  // address= / addr=
-  var ad=url.match(/[?&](?:address|addr)=([^&]+)/);
-  if(ad)result.addr=decodeURIComponent(ad[1].replace(/\+/g,' '));
+    // ── name / title
+    result.name = p.get('name') || p.get('title') || p.get('poiname') || '';
+    if(result.name) result.name = decodeURIComponent(result.name.replace(/\+/g,' '));
 
-  // keywords= / query= (pour /search)
-  var kw=url.match(/[?&](?:keywords?|query|keyword)=([^&]+)/);
-  if(kw&&!result.name)result.name=decodeURIComponent(kw[1].replace(/\+/g,' '));
+    // ── address
+    result.addr = p.get('address') || p.get('addr') || p.get('poiaddress') || '';
+    if(result.addr) result.addr = decodeURIComponent(result.addr.replace(/\+/g,' '));
+
+    // ── keywords / query (page /search)
+    if(!result.name){
+      var kw = p.get('keywords') || p.get('keyword') || p.get('query') || p.get('q') || '';
+      if(kw) result.name = decodeURIComponent(kw.replace(/\+/g,' '));
+    }
+
+    // ── /place/NAME path
+    if(!result.name){
+      var pathMatch = u.pathname.match(/\/(?:place|search|poi)\/([^/?#]+)/);
+      if(pathMatch) result.name = decodeURIComponent(pathMatch[1].replace(/\+/g,' ').replace(/_/g,' '));
+    }
+
+  } catch(e) {
+    // URL invalide ou courte (surl.amap.com) — regex fallback
+    var pos2 = url.match(/[?&]position=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if(pos2){ result.lng=parseFloat(pos2[1]); result.lat=parseFloat(pos2[2]); }
+    var loc2 = url.match(/[?&]location=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if(loc2){ result.lng=parseFloat(loc2[1]); result.lat=parseFloat(loc2[2]); }
+    var nm2 = url.match(/[?&]name=([^&]+)/);
+    if(nm2) result.name = decodeURIComponent(nm2[1].replace(/\+/g,' '));
+    var ad2 = url.match(/[?&](?:address|addr)=([^&]+)/);
+    if(ad2) result.addr = decodeURIComponent(ad2[1].replace(/\+/g,' '));
+  }
+
+  // Nettoyer le nom (caractères %xx résiduels)
+  if(result.name) result.name = result.name.replace(/%[0-9A-Fa-f]{2}/g, '').trim();
+  if(result.addr) result.addr = result.addr.replace(/%[0-9A-Fa-f]{2}/g, '').trim();
 
   return result;
 }
 
-// Applique la conversion GCJ-02 → WGS-84 et remplit les champs du formulaire
+// Applique le résultat parsé dans le formulaire — TOUT se remplit
 function applyAmapResult(r, statusEl){
-  if(r.lat&&r.lng){
-    // Convertir GCJ-02 → WGS-84 pour Leaflet
-    var wgs=gcjToWgs(r.lat,r.lng);
-    document.getElementById('f-lat').value=wgs.lat;
-    document.getElementById('f-lng').value=wgs.lng;
-    coordSrc='amap'; syncCoordUI();
-    // stocker les coords GCJ brutes dans les champs (le save va re-convertir)
-    document.getElementById('f-lat').value=r.lat;
-    document.getElementById('f-lng').value=r.lng;
-    coordSrc='amap'; syncCoordUI();
-  }
-  if(r.name&&!document.getElementById('f-name').value)
-    document.getElementById('f-name').value=r.name;
-  if(r.addr&&!document.getElementById('f-addr').value)
-    document.getElementById('f-addr').value=r.addr;
-  if(r.mapLink&&!document.getElementById('f-link').value)
-    document.getElementById('f-link').value=r.mapLink;
+  var hasCoords = r.lat && r.lng && !isNaN(r.lat) && !isNaN(r.lng);
 
+  // Coordonnées : stocker brutes GCJ-02 (converties à la sauvegarde)
+  if(hasCoords){
+    document.getElementById('f-lat').value = r.lat;
+    document.getElementById('f-lng').value = r.lng;
+    coordSrc = 'amap';
+    syncCoordUI();
+    // Masquer le bouton "saisir manuellement", montrer le champ coords en lecture
+    document.getElementById('f-show-coords').style.display = 'none';
+    document.getElementById('f-coords-field').style.display = 'none';
+  }
+
+  // Nom
+  if(r.name) document.getElementById('f-name').value = r.name;
+
+  // Adresse
+  if(r.addr) document.getElementById('f-addr').value = r.addr;
+
+  // Lien externe Maps
+  document.getElementById('f-link').value = r.mapLink;
+
+  // Source
+  if(!document.getElementById('f-src').value)
+    document.getElementById('f-src').value = 'Amap';
+
+  // Status visuel
   if(statusEl){
-    var ok=r.lat&&r.lng;
-    statusEl.style.display='block';
-    statusEl.style.background=ok?'rgba(107,140,110,.08)':'rgba(201,169,110,.08)';
-    statusEl.style.color=ok?'var(--sage)':'var(--gold)';
-    statusEl.style.border='1px solid '+(ok?'rgba(107,140,110,.2)':'rgba(201,169,110,.3)');
-    statusEl.textContent=ok
-      ?'✓ '+(r.name||'Lieu')+(r.addr?' — '+r.addr:'')
-      :'⚠ Coordonnées non trouvées — remplis manuellement';
+    statusEl.style.display = 'block';
+    if(hasCoords){
+      statusEl.style.background = 'rgba(107,140,110,.08)';
+      statusEl.style.color = 'var(--sage)';
+      statusEl.style.border = '1px solid rgba(107,140,110,.25)';
+      var lines = [];
+      if(r.name) lines.push('📍 <b>' + r.name + '</b>');
+      if(r.addr) lines.push('🏠 ' + r.addr);
+      lines.push('🗺 ' + r.lat.toFixed(5) + ', ' + r.lng.toFixed(5) + ' <span style="opacity:.6">(GCJ-02 → converti)</span>');
+      statusEl.innerHTML = lines.join('<br>');
+    } else {
+      statusEl.style.background = 'rgba(201,169,110,.08)';
+      statusEl.style.color = '#A07840';
+      statusEl.style.border = '1px solid rgba(201,169,110,.3)';
+      statusEl.innerHTML = '⚠ Coordonnées non trouvées dans ce lien'
+        + (r.name ? '<br>📍 <b>' + r.name + '</b>' : '')
+        + '<br><span style="opacity:.7">Saisis-les manuellement ci-dessous</span>';
+      // Afficher le champ coords manuel
+      document.getElementById('f-coords-field').style.display = 'block';
+      document.getElementById('f-show-coords').style.display = 'none';
+    }
   }
 }
 
