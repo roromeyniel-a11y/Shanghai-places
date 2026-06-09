@@ -1495,32 +1495,49 @@ document.getElementById('mapsimport-parse-btn').addEventListener('click', functi
   document.getElementById('mapsimport-preview').style.display = 'none';
   document.getElementById('mapsimport-add-btn').style.display = 'none';
 
-  var parsed = detectAndParse(url);
+  // Détecter si c'est un lien Amap ou Google Maps
+  var isAmap = /amap\.com|gaode\.com|surl\.amap/i.test(url);
+  var isGoogle = /google\.com\/maps|maps\.app\.goo\.gl|maps\.google/i.test(url);
 
-  if (!parsed) {
-    showMapsStatus('Lien non reconnu. Essaie un lien Google Maps ou Amap.', 'err');
-    return;
-  }
+  showMapsStatus('⟳ Résolution du lien…', 'ok');
 
-  mapsImportData = parsed;
-
-  // Show preview
-  var hasCoords = parsed.lat && parsed.lng;
-  var preview = document.getElementById('mapsimport-preview');
-  document.getElementById('mapsimport-pname').textContent = parsed.name || '(nom non détecté)';
-  document.getElementById('mapsimport-paddr').textContent = parsed.addr || '';
-  document.getElementById('mapsimport-pcoords').textContent = hasCoords
-    ? 'Coordonnées : ' + parsed.lat + ', ' + parsed.lng + (parsed.source === 'amap' ? ' (GCJ-02 → sera converti)' : ' (WGS-84)')
-    : 'Coordonnées non trouvées dans le lien';
-  preview.style.display = 'block';
-
-  if (parsed.name || hasCoords) {
-    showMapsStatus('✓ Informations extraites — ouvre le formulaire pour compléter.', 'ok');
-    document.getElementById('mapsimport-add-btn').style.display = 'block';
+  var parsePromise;
+  if (isAmap) {
+    parsePromise = parseAmapLinkFull(url);
+  } else if (isGoogle) {
+    parsePromise = Promise.resolve(parseGoogleMapsUrl(url));
   } else {
-    showMapsStatus('Certaines informations manquent. Tu pourras les compléter dans le formulaire.', 'ok');
-    document.getElementById('mapsimport-add-btn').style.display = 'block';
+    // Générique : essayer d'extraire des coords
+    var anyCoords = url.match(/(-?\d{1,3}\.\d{4,})[,\s]+(-?\d{1,3}\.\d{4,})/);
+    if (anyCoords) {
+      parsePromise = Promise.resolve({ name: '', lat: parseFloat(anyCoords[1]), lng: parseFloat(anyCoords[2]), addr: '', source: 'google' });
+    } else {
+      showMapsStatus('Lien non reconnu. Essaie un lien Google Maps ou Amap.', 'err');
+      return;
+    }
   }
+
+  parsePromise.then(function(parsed) {
+    if (!parsed) { showMapsStatus('Lien non reconnu. Essaie un lien Google Maps ou Amap.', 'err'); return; }
+    mapsImportData = parsed;
+    var hasCoords = parsed.lat && parsed.lng;
+    var preview = document.getElementById('mapsimport-preview');
+    document.getElementById('mapsimport-pname').textContent = parsed.name || '(nom non détecté)';
+    document.getElementById('mapsimport-paddr').textContent = parsed.addr || '';
+    document.getElementById('mapsimport-pcoords').textContent = hasCoords
+      ? 'Coordonnées : ' + parsed.lat + ', ' + parsed.lng + (parsed.source === 'amap' ? ' (GCJ-02 → sera converti)' : ' (WGS-84)')
+      : 'Coordonnées non trouvées dans le lien';
+    preview.style.display = 'block';
+    if (parsed.name || hasCoords) {
+      showMapsStatus('✓ Informations extraites — ouvre le formulaire pour compléter.', 'ok');
+      document.getElementById('mapsimport-add-btn').style.display = 'block';
+    } else {
+      showMapsStatus('Certaines informations manquent. Tu pourras les compléter dans le formulaire.', 'ok');
+      document.getElementById('mapsimport-add-btn').style.display = 'block';
+    }
+  }).catch(function() {
+    showMapsStatus('Erreur lors de la résolution du lien.', 'err');
+  });
 });
 
 document.getElementById('mapsimport-add-btn').addEventListener('click', function() {
@@ -1727,68 +1744,136 @@ function generatePDF(places) {
  * Extrait nom, coordonnées GCJ-02, adresse depuis un lien Amap.
  * Formats supportés :
  *   - https://uri.amap.com/marker?position=lng,lat&name=NOM&address=ADDR
- *   - https://www.amap.com/place/POIID  (on lit le titre de page via proxy CORS)
- *   - https://surl.amap.com/XXXX       (lien court, même logique)
+ *   - https://www.amap.com/place/POIID  → résolution via allorigins proxy
+ *   - https://surl.amap.com/XXXX        → résolution via allorigins proxy
  *   - https://www.amap.com/search?query=NOM&...
  *   - Tout URL avec position= ou location= param
+ *
+ * Retourne une Promise<result>.
  */
 function parseAmapLinkFull(url){
   url = url.trim();
   var result = {name:'', lat:null, lng:null, addr:'', mapLink:url};
 
-  try {
-    var u = new URL(url);
-    var p = u.searchParams;
+  // ── 1. Extraction synchrone des paramètres d'URL ──────────────────────────
+  function extractFromUrl(rawUrl){
+    var r = {name:'', lat:null, lng:null, addr:'', mapLink:rawUrl};
+    try {
+      var u = new URL(rawUrl);
+      var p = u.searchParams;
 
-    // ── position=lng,lat  (uri.amap.com/marker, surl.amap.com redirigés)
-    var pos = p.get('position') || p.get('pos');
-    if(pos){ var pp=pos.split(','); if(pp.length>=2){result.lng=parseFloat(pp[0]);result.lat=parseFloat(pp[1]);} }
+      var pos = p.get('position') || p.get('pos');
+      if(pos){ var pp=pos.split(','); if(pp.length>=2){r.lng=parseFloat(pp[0]);r.lat=parseFloat(pp[1]);} }
 
-    // ── location=lng,lat
-    var loc = p.get('location');
-    if(loc){ var lp=loc.split(','); if(lp.length>=2){result.lng=parseFloat(lp[0]);result.lat=parseFloat(lp[1]);} }
+      var loc = p.get('location');
+      if(loc){ var lp=loc.split(','); if(lp.length>=2){r.lng=parseFloat(lp[0]);r.lat=parseFloat(lp[1]);} }
 
-    // ── coordinate=lng,lat
-    var co = p.get('coordinate') || p.get('coord');
-    if(co && !result.lat){ var cp=co.split(','); if(cp.length>=2){result.lng=parseFloat(cp[0]);result.lat=parseFloat(cp[1]);} }
+      var co = p.get('coordinate') || p.get('coord');
+      if(co && !r.lat){ var cp=co.split(','); if(cp.length>=2){r.lng=parseFloat(cp[0]);r.lat=parseFloat(cp[1]);} }
 
-    // ── name / title
-    result.name = p.get('name') || p.get('title') || p.get('poiname') || '';
-    if(result.name) result.name = decodeURIComponent(result.name.replace(/\+/g,' '));
+      r.name = p.get('name') || p.get('title') || p.get('poiname') || '';
+      if(r.name) r.name = decodeURIComponent(r.name.replace(/\+/g,' '));
 
-    // ── address
-    result.addr = p.get('address') || p.get('addr') || p.get('poiaddress') || '';
-    if(result.addr) result.addr = decodeURIComponent(result.addr.replace(/\+/g,' '));
+      r.addr = p.get('address') || p.get('addr') || p.get('poiaddress') || '';
+      if(r.addr) r.addr = decodeURIComponent(r.addr.replace(/\+/g,' '));
 
-    // ── keywords / query (page /search)
-    if(!result.name){
-      var kw = p.get('keywords') || p.get('keyword') || p.get('query') || p.get('q') || '';
-      if(kw) result.name = decodeURIComponent(kw.replace(/\+/g,' '));
+      if(!r.name){
+        var kw = p.get('keywords') || p.get('keyword') || p.get('query') || p.get('q') || '';
+        if(kw) r.name = decodeURIComponent(kw.replace(/\+/g,' '));
+      }
+
+      if(!r.name){
+        var pathMatch = u.pathname.match(/\/(?:place|search|poi)\/([^/?#]+)/);
+        if(pathMatch) r.name = decodeURIComponent(pathMatch[1].replace(/\+/g,' ').replace(/_/g,' '));
+      }
+
+      // Détecte si c'est un lien court ou fiche lieu sans coords
+      r._needsResolve = (!r.lat || !r.lng) && (
+        /surl\.amap\.com/i.test(rawUrl) ||
+        /amap\.com\/place\/[A-Z0-9]+$/i.test(rawUrl) ||
+        /gaode\.com\/place\/[A-Z0-9]+$/i.test(rawUrl)
+      );
+
+      // Détecte POI ID dans l'URL pour requête API
+      var poiMatch = rawUrl.match(/\/place\/([A-Z0-9]{10,})/i);
+      if(poiMatch) r._poiId = poiMatch[1];
+
+    } catch(e) {
+      // Regex fallback pour URLs invalides
+      var pos2 = rawUrl.match(/[?&]position=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if(pos2){ r.lng=parseFloat(pos2[1]); r.lat=parseFloat(pos2[2]); }
+      var nm2 = rawUrl.match(/[?&]name=([^&]+)/);
+      if(nm2) r.name = decodeURIComponent(nm2[1].replace(/\+/g,' '));
+      var ad2 = rawUrl.match(/[?&](?:address|addr)=([^&]+)/);
+      if(ad2) r.addr = decodeURIComponent(ad2[1].replace(/\+/g,' '));
     }
 
-    // ── /place/NAME path
-    if(!result.name){
-      var pathMatch = u.pathname.match(/\/(?:place|search|poi)\/([^/?#]+)/);
-      if(pathMatch) result.name = decodeURIComponent(pathMatch[1].replace(/\+/g,' ').replace(/_/g,' '));
-    }
-
-  } catch(e) {
-    // URL invalide ou courte (surl.amap.com) — regex fallback
-    var pos2 = url.match(/[?&]position=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-    if(pos2){ result.lng=parseFloat(pos2[1]); result.lat=parseFloat(pos2[2]); }
-    var loc2 = url.match(/[?&]location=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-    if(loc2){ result.lng=parseFloat(loc2[1]); result.lat=parseFloat(loc2[2]); }
-    var nm2 = url.match(/[?&]name=([^&]+)/);
-    if(nm2) result.name = decodeURIComponent(nm2[1].replace(/\+/g,' '));
-    var ad2 = url.match(/[?&](?:address|addr)=([^&]+)/);
-    if(ad2) result.addr = decodeURIComponent(ad2[1].replace(/\+/g,' '));
+    if(r.name) r.name = r.name.replace(/%[0-9A-Fa-f]{2}/g,'').trim();
+    if(r.addr) r.addr = r.addr.replace(/%[0-9A-Fa-f]{2}/g,'').trim();
+    return r;
   }
 
-  // Nettoyer le nom (caractères %xx résiduels)
-  if(result.name) result.name = result.name.replace(/%[0-9A-Fa-f]{2}/g, '').trim();
-  if(result.addr) result.addr = result.addr.replace(/%[0-9A-Fa-f]{2}/g, '').trim();
+  // ── 2. Extraire coords depuis le HTML d'une page Amap ─────────────────────
+  function extractFromHtml(html, baseResult){
+    var r = Object.assign({}, baseResult);
 
-  return result;
+    // Cherche "center":"lng,lat" ou "position":"lng,lat" dans le JSON embarqué
+    var coordPat = /"(?:center|position|coordinate|location)":"(-?\d{2,3}\.\d{4,}),(-?\d{1,3}\.\d{4,})"/;
+    var cm = html.match(coordPat);
+    if(cm){ r.lng=parseFloat(cm[1]); r.lat=parseFloat(cm[2]); }
+
+    // Fallback : data-lng / data-lat dans le HTML
+    if(!r.lat){
+      var dlat = html.match(/data-lat="(-?\d+\.\d+)"/);
+      var dlng = html.match(/data-lng="(-?\d+\.\d+)"/);
+      if(dlat && dlng){ r.lat=parseFloat(dlat[1]); r.lng=parseFloat(dlng[1]); }
+    }
+
+    // Titre de la page → nom du lieu
+    if(!r.name){
+      var titleM = html.match(/<title>([^<|_–-]+)/);
+      if(titleM) r.name = titleM[1].replace(/\s*[-–|_].*/,'').trim();
+    }
+
+    // Adresse dans og:description ou address
+    if(!r.addr){
+      var addrM = html.match(/(?:address|地址)[^\w<]*?[:：]\s*([^<\n"]{4,60})/i);
+      if(addrM) r.addr = addrM[1].trim();
+    }
+
+    return r;
+  }
+
+  // ── 3. Pipeline : extraction directe, puis résolution si besoin ───────────
+  var direct = extractFromUrl(url);
+
+  // Si on a déjà les coordonnées, renvoyer immédiatement une Promise résolue
+  if(direct.lat && direct.lng){
+    return Promise.resolve(direct);
+  }
+
+  // Lien court ou fiche lieu → essayer de résoudre via allorigins (proxy CORS gratuit)
+  var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+  return fetch(proxyUrl, {signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined})
+    .then(function(resp){ return resp.json(); })
+    .then(function(data){
+      var html = data.contents || '';
+      // Vérifier si on a été redirigé (allorigins suit les redirections)
+      var finalUrl = (data.status && data.status.url) ? data.status.url : url;
+      var fromRedirect = extractFromUrl(finalUrl);
+      // Fusionner : priorité aux coords de l'URL finale, puis du HTML
+      var merged = Object.assign({}, direct, fromRedirect);
+      if(!merged.lat || !merged.lng){
+        merged = extractFromHtml(html, merged);
+      }
+      if(!merged.name && fromRedirect.name) merged.name = fromRedirect.name;
+      merged.mapLink = url; // garder le lien original
+      return merged;
+    })
+    .catch(function(){
+      // Si le proxy échoue, retourner ce qu'on a déjà (sans coords)
+      return direct;
+    });
 }
 
 // Applique le résultat parsé dans le formulaire — TOUT se remplit
@@ -1854,8 +1939,22 @@ window.parseFormAmapLink=function(){
     st.style.color='var(--rust)';st.style.border='1px solid rgba(184,92,56,.2)';
     st.textContent='⚠ Colle un lien Amap';return;
   }
-  var r=parseAmapLinkFull(url);
-  applyAmapResult(r,st);
+  // Afficher un état de chargement
+  st.style.display='block';
+  st.style.background='rgba(201,169,110,.08)';
+  st.style.color='var(--stone)';
+  st.style.border='1px solid rgba(201,169,110,.2)';
+  st.innerHTML='<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;display:inline-block"></span> Résolution du lien…</span>';
+  parseAmapLinkFull(url).then(function(r){
+    applyAmapResult(r,st);
+  }).catch(function(){
+    st.style.background='rgba(184,92,56,.08)';
+    st.style.color='var(--rust)';
+    st.style.border='1px solid rgba(184,92,56,.2)';
+    st.textContent='⚠ Impossible de résoudre ce lien. Saisis les coordonnées manuellement.';
+    document.getElementById('f-coords-field').style.display='block';
+    document.getElementById('f-show-coords').style.display='none';
+  });
 };
 
 // Auto-extraction quand on colle dans le champ lien du formulaire
@@ -1887,30 +1986,40 @@ document.getElementById('bulk-parse-btn').addEventListener('click',function(){
   var raw=document.getElementById('bulk-links').value.trim();
   if(!raw){return;}
   var lines=raw.split(/\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>4;});
-  bulkResults=lines.map(function(url){
-    var r=parseAmapLinkFull(url);
-    return r;
-  });
 
-  var okCount=bulkResults.filter(function(r){return r.lat&&r.lng;}).length;
+  // Afficher spinner pendant résolution
   var st=document.getElementById('bulk-status');
   st.style.display='block';
-  st.innerHTML='<div style="font-size:12px;font-family:var(--mono);padding:10px 12px;border-radius:8px;background:rgba(107,140,110,.08);border:1px solid rgba(107,140,110,.2);color:var(--sage)">'
-    +'✓ '+bulkResults.length+' lien'+(bulkResults.length>1?'s':'')+' analysé'+(bulkResults.length>1?'s':'')+' · '
-    +okCount+' avec coordonnées'
-    +(okCount<bulkResults.length?' · <span style="color:var(--gold)">'+(bulkResults.length-okCount)+' sans coords</span>':'')
-    +'</div>';
+  st.innerHTML='<div style="font-size:12px;font-family:var(--mono);padding:10px 12px;border-radius:8px;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.2);color:var(--stone);display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;flex-shrink:0"></span> Analyse de '+lines.length+' lien'+(lines.length>1?'s':'')+'…</div>';
+  document.getElementById('bulk-preview').style.display='none';
+  document.getElementById('bulk-add-btn').style.display='none';
+  bulkResults=[];
 
-  // Preview cards
-  var preview=document.getElementById('bulk-preview');
-  preview.style.display='block';
-  preview.innerHTML=bulkResults.map(function(r,i){
-    var hasCoords=r.lat&&r.lng;
-    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:'+(hasCoords?'white':'rgba(201,169,110,.04)')+'">'      +'<div style="width:32px;height:32px;border-radius:8px;background:'+(hasCoords?'rgba(107,140,110,.12)':'rgba(201,169,110,.12)')+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(hasCoords?'📍':'⚠')+'</div>'      +'<div style="flex:1;min-width:0">'      +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.name||'(nom non détecté)')+'</div>'      +'<div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-top:2px">'+(hasCoords?r.lat.toFixed(4)+', '+r.lng.toFixed(4)+' (GCJ-02)':'Coordonnées manquantes')+'</div>'      +(r.addr?'<div style="font-size:11px;color:var(--stone-light);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.addr+'</div>':'')      +'</div></div>';
-  }).join('');
-
-  document.getElementById('bulk-add-btn').style.display=bulkResults.length?'block':'none';
-  document.getElementById('bulk-add-btn').textContent='✓ Ajouter '+bulkResults.length+' lieu'+(bulkResults.length>1?'x':'');
+  // Résoudre tous les liens en parallèle
+  Promise.all(lines.map(function(url){ return parseAmapLinkFull(url).catch(function(){ return {name:'',lat:null,lng:null,addr:'',mapLink:url}; }); }))
+    .then(function(results){
+      bulkResults=results;
+      var okCount=bulkResults.filter(function(r){return r.lat&&r.lng;}).length;
+      st.innerHTML='<div style="font-size:12px;font-family:var(--mono);padding:10px 12px;border-radius:8px;background:rgba(107,140,110,.08);border:1px solid rgba(107,140,110,.2);color:var(--sage)">'
+        +'✓ '+bulkResults.length+' lien'+(bulkResults.length>1?'s':'')+' analysé'+(bulkResults.length>1?'s':'')+' · '
+        +okCount+' avec coordonnées'
+        +(okCount<bulkResults.length?' · <span style="color:var(--gold)">'+(bulkResults.length-okCount)+' sans coords</span>':'')
+        +'</div>';
+      var preview=document.getElementById('bulk-preview');
+      preview.style.display='block';
+      preview.innerHTML=bulkResults.map(function(r){
+        var hasCoords=r.lat&&r.lng;
+        return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:'+(hasCoords?'white':'rgba(201,169,110,.04)')+'">'
+          +'<div style="width:32px;height:32px;border-radius:8px;background:'+(hasCoords?'rgba(107,140,110,.12)':'rgba(201,169,110,.12)')+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(hasCoords?'📍':'⚠')+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.name||'(nom non détecté)')+'</div>'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--stone);margin-top:2px">'+(hasCoords?r.lat.toFixed(4)+', '+r.lng.toFixed(4)+' (GCJ-02)':'Coordonnées manquantes')+'</div>'
+          +(r.addr?'<div style="font-size:11px;color:var(--stone-light);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.addr+'</div>':'')
+          +'</div></div>';
+      }).join('');
+      document.getElementById('bulk-add-btn').style.display=bulkResults.length?'block':'none';
+      document.getElementById('bulk-add-btn').textContent='✓ Ajouter '+bulkResults.length+' lieu'+(bulkResults.length>1?'x':'');
+    });
 });
 
 document.getElementById('bulk-add-btn').addEventListener('click',function(){
